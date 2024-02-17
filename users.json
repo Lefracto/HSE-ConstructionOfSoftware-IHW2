@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "login": "Refractor",
+        "passwordHash": -2040930614,
+        "isAdmin": false
+    },
+    {
+        "id": 1,
+        "login": "DanteRomeo",
+        "passwordHash": -1503031638,
+        "isAdmin": false
+    }
+]
