@@ -1,17 +1,16 @@
+
 import authentication.Authorizer
 import authentication.User
+import managers.MealsManager
 
 
 class ControlPanel {
     private var exitProgramCommandText = "exit"
     private var incorrectCommandMessage = "Incorrect command!"
-    // private var adminLogInCommandText = "admin"
-    // private var exitAdminCommandText = "log out"
-    // private var notAdminMessage = "You are not admin!"
-
 
     private val commandList: MutableList<Command> = mutableListOf()
-    private val authorizer: Authorizer = Authorizer()
+    private val authorizer: Authorizer = Authorizer("users.json")
+    private val mealsManager: MealsManager = MealsManager()
     private var currentUser: User? = null
 
 
@@ -20,14 +19,25 @@ class ControlPanel {
     }
 
     private fun createCommandsMap() {
-        // commandList.add(Command("admin", false) { authorizer.requestAuthorization() })
+        // customer's commands
         commandList.add(Command("help", false) { printHelp() })
         commandList.add(Command("log out", false) { currentUser = null })
-        /*commandList.add(Command("add meal", true) { authorizer.tryAuthorize() })
-        commandList.add(Command("remove meal", true) { authorizer.tryAuthorize() })
-        commandList.add(Command("change meal", true) { authorizer.tryAuthorize() })
-        commandList.add(Command("print meals", true) { authorizer.tryAuthorize() })
+
+
+        // admins commands
+        commandList.add(Command("log out", true) { currentUser = null })
+        commandList.add(Command("register admin", true) { authorizer.registerUser(true) })
+        commandList.add(Command("guide", true) { printHelp() })
+        commandList.add(Command("add meal", true) { mealsManager.addMeal() })
+        commandList.add(Command("show meals", true) { mealsManager.showMeals() })
+        commandList.add(Command("edit meal", true) { mealsManager.editMeal() })
+        commandList.add(Command("remove meal", true) { mealsManager.removeMeal() })
+
+
+        /*commandList.add(Command("remove meal", true) { authorizer.tryAuthorize() })
         commandList.add(Command("show stats", true) { authorizer.tryAuthorize() })
+
+
 
         // customer commands
         commandList.add(Command("make order", false) { authorizer.tryAuthorize() })
@@ -39,13 +49,19 @@ class ControlPanel {
 
 
     private fun printEnterText() {
-        println("You can call guide by 'help' command)\n Enter command: ")
+        println("\nEnter command: ")
     }
 
 
     private fun processCommand(commandText: String): Boolean {
-        val command = commandList.find { c -> c.command == commandText } ?: return false
-        command.action.invoke()
+        val usersCommands = commandList.filter { user -> user.isAdminCommand == currentUser?.isAdmin }
+        val command = usersCommands.find { c -> c.command == commandText } ?: return false
+
+        if (command.isAdminCommand == currentUser?.isAdmin)
+            command.action.invoke()
+        else
+            println("Error of access level.")
+
         return true
     }
 
@@ -60,7 +76,7 @@ class ControlPanel {
 
         var command: String
         do {
-            if(!checkAuthorization())
+            if (!checkAuthorization())
                 break
 
             printEnterText()
