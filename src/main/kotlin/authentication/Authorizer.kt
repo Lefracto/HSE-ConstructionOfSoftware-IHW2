@@ -1,8 +1,7 @@
 package authentication
 
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.io.File
+import dataClasses.User
+import supportModules.DataSaver
 import java.util.*
 
 private const val startText = "Welcome! Enter necessary command (login, register, exit) :"
@@ -15,15 +14,13 @@ private const val askForLoginText = "Enter your login: "
 private const val askForPasswordText = "Enter your password: "
 private const val loggingText = "Logging in:"
 private const val registerCommandText = "register"
-private const val readingFileErrorText = "File not found"
 private const val loginCommandText = "login"
 private const val exitCommandText = "exit"
 
-class Authorizer(private val usersSaveFileName: String) {
+class Authorizer(private val usersFileName: String) {
 
     private val users: MutableList<User> = mutableListOf()
     private val scanner = Scanner(System.`in`)
-    private val json1 = Json { prettyPrint = true }
 
     private fun getUserByData(login: String, password: String): User? {
         val user = users.find { user -> user.login == login }
@@ -87,19 +84,11 @@ class Authorizer(private val usersSaveFileName: String) {
         }
     }
     fun saveToFile() {
-        val json = json1.encodeToString(users)
-        File(usersSaveFileName).writeText(json)
+        DataSaver.serializeListToFile<User>(users, usersFileName)
     }
     fun loadFromFile() {
-        val file = File(usersSaveFileName)
-        if (file.exists()) {
-            val json = file.readText()
-            val userList = Json.decodeFromString<List<User>>(json)
-            users.clear()
-            users.addAll(userList)
-            User.setLastId(users.maxBy { user -> user.id }.id + 1)
-        } else {
-            println(readingFileErrorText)
-        }
+        users.addAll(DataSaver.deserializeListFromFile<User>(usersFileName))
+        if (users.isNotEmpty())
+            User.idGenerator.setLastId(users.maxBy { user -> user.id }.id + 1)
     }
 }

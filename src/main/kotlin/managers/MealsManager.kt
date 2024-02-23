@@ -1,41 +1,36 @@
 package managers
 
+import dataClasses.Meal
+import dataClasses.Rating
+import dataClasses.User
+import supportModules.DataSaver
 import java.util.*
-class MealsManager {
 
+class MealsManager(private val mealsFileName: String) {
     private val meals: MutableList<Meal> = mutableListOf()
+    private val scanner = Scanner(System.`in`)
+
+    private fun getMealByInput(): Meal? {
+        val id = DataSaver.getIntInput("Enter meal's id: ")
+        return meals.find { meal -> meal.id == id }
+    }
+
+    fun getMenu(): MutableList<Meal> {
+        return meals
+    }
 
     fun addMeal() {
         val scanner = Scanner(System.`in`)
-        println("Adding a new meal:")
+        println("Adding a new meal.")
         print("Enter meal name: ")
         val name = scanner.nextLine()
 
-        print("Enter meal price: ")
-        val price = getIntInput()
+        val price = DataSaver.getIntInput("Enter meal price: ")
+        val preparationTime = DataSaver.getIntInput("Enter preparation time (in minutes): ")
 
-        print("Enter preparation time (in minutes): ")
-        val preparationTime = getIntInput()
-
-        val newMeal = Meal(name, price, preparationTime)
+        val newMeal = Meal(name, price, preparationTime, 0, Rating(4.0, 10))
         meals.add(newMeal)
         println("Meal added successfully!")
-    }
-    private fun getIntInput(): Int {
-        val scanner = Scanner(System.`in`)
-        while (true) {
-            try {
-                val newInt = scanner.nextInt()
-
-                if (newInt <= 0)
-                    throw InputMismatchException()
-
-                return newInt
-            } catch (e: InputMismatchException) {
-                println("Invalid input! Please enter a valid integer.")
-                scanner.nextLine()
-            }
-        }
     }
 
     fun removeMeal() {
@@ -44,48 +39,53 @@ class MealsManager {
             return
         }
 
-        print("Enter meal's id: ")
-        val id = getIntInput()
-        val meal = meals.find { meal -> meal.id == id }
-        if (meal == null) {
-            println("There are no meal with such id.")
-            return
-        }
+        val meal = getMealByInput() ?: return
         meals.remove(meal)
     }
+
     fun editMeal() {
         if (meals.isEmpty()) {
             println("There are no meals in menu.")
             return
         }
 
-        val scanner = Scanner(System.`in`)
-        print("Enter meal's id: ")
-        val id = getIntInput()
-        val meal = meals.find { meal -> meal.id == id }
-        if (meal == null) {
-            println("There are no meal with such id.")
-        }
+        val meal = getMealByInput() ?: return
 
         print("Enter new meal name: ")
-        meal!!.name = scanner.nextLine()
+        meal.name = scanner.nextLine()
 
-        print("Enter new meal price: ")
-        meal.price = getIntInput()
-
-        print("Enter new preparation time (in minutes): ")
-        meal.preparationTime = getIntInput()
+        meal.price = DataSaver.getIntInput("Enter new meal price: ")
+        meal.preparationTime = DataSaver.getIntInput("Enter new preparation time (in minutes): ")
 
         println("Meal has been changed successfully.")
     }
+
     fun showMeals() {
         if (meals.isNotEmpty()) {
-            println("id\t\t\tname\t\t\tprice\t\t\ttimeToCook(min)")
+            println("%-10s %-20s %-10s %-20s %-10s".format("id", "name", "price", "timeToCook(min)", "countBookings"))
             for (meal in meals) {
-                println(meal)
+                println(
+                    "%-10s %-20s %-10s %-20s %-10s".format(
+                        meal.id,
+                        meal.name,
+                        meal.price,
+                        meal.preparationTime,
+                        meal.countBookings
+                    )
+                )
             }
         } else {
-            println("There are no meals in menu.")
+            println("There are no meals in the menu.")
         }
+    }
+
+    fun saveToFile() {
+        DataSaver.serializeListToFile<Meal>(meals, mealsFileName)
+    }
+
+    fun loadFromFile() {
+        meals.addAll(DataSaver.deserializeListFromFile<Meal>(mealsFileName))
+        if (meals.isNotEmpty())
+            User.idGenerator.setLastId(meals.maxBy { meals -> meals.id }.id + 1)
     }
 }

@@ -1,16 +1,29 @@
-
 import authentication.Authorizer
-import authentication.User
+import dataClasses.Command
+import dataClasses.User
 import managers.MealsManager
+import managers.OrdersManager
+import managers.StatsManager
 
+private const val exitProgramCommandText = "exit"
+private const val incorrectCommandMessage = "Incorrect command!"
+
+private const val usersFileName = "users.json"
+private const val mealsFileName = "meals.json"
+private const val statsFileName = "stats.json"
+
+private const val helpFileName = "help.txt"
+private const val guideFileName = "guide.txt"
 
 class ControlPanel {
-    private var exitProgramCommandText = "exit"
-    private var incorrectCommandMessage = "Incorrect command!"
-
     private val commandList: MutableList<Command> = mutableListOf()
-    private val authorizer: Authorizer = Authorizer("users.json")
-    private val mealsManager: MealsManager = MealsManager()
+
+
+    private val authorizer: Authorizer = Authorizer(usersFileName)
+    private val mealsManager: MealsManager = MealsManager(mealsFileName)
+    private val statsManager: StatsManager = StatsManager(statsFileName)
+    private val ordersManager: OrdersManager = OrdersManager(statsManager)
+
     private var currentUser: User? = null
 
 
@@ -22,6 +35,34 @@ class ControlPanel {
         // customer's commands
         commandList.add(Command("help", false) { printHelp() })
         commandList.add(Command("log out", false) { currentUser = null })
+        commandList.add(
+            Command(
+                "order",
+                false
+            ) { mealsManager.showMeals(); ordersManager.addOrder(mealsManager.getMenu(), currentUser!!.id) })
+        commandList.add(Command("check", false) {
+            ordersManager.checkOrderStatus(
+                currentUser!!.id,
+            )
+        })
+        commandList.add(Command("cancel", false) {
+            ordersManager.cancelOrder(
+                currentUser!!.id,
+            )
+        })
+        commandList.add(Command("rate", false) { })
+        commandList.add(Command("pay", false) {
+            ordersManager.payForTheOrder(
+                currentUser!!.id,
+            )
+        })
+        commandList.add(Command("add meals", false) {
+            ordersManager.editOrder(
+                mealsManager.getMenu(),
+                currentUser!!.id
+            )
+        })
+        commandList.add(Command("rate dish", false) { ordersManager.rateOrder(currentUser!!.id) })
 
 
         // admins commands
@@ -34,17 +75,8 @@ class ControlPanel {
         commandList.add(Command("remove meal", true) { mealsManager.removeMeal() })
 
 
-        /*commandList.add(Command("remove meal", true) { authorizer.tryAuthorize() })
-        commandList.add(Command("show stats", true) { authorizer.tryAuthorize() })
+        //commandList.add(dataClasses.Command("show stats", true) { authorizer.tryAuthorize() })
 
-
-
-        // customer commands
-        commandList.add(Command("make order", false) { authorizer.tryAuthorize() })
-        commandList.add(Command("check order", false) { authorizer.tryAuthorize() })
-        commandList.add(Command("pay order", false) { authorizer.tryAuthorize() })
-        commandList.add(Command("cancel order", false) { authorizer.tryAuthorize() })
-        commandList.add(Command("change order", false) { authorizer.tryAuthorize() }) */
     }
 
 
@@ -93,9 +125,12 @@ class ControlPanel {
 
     private fun saveData() {
         authorizer.saveToFile()
+        mealsManager.saveToFile()
+        ordersManager.cancelAllOrders()
     }
 
     private fun loadData() {
         authorizer.loadFromFile()
+       // mealsManager.loadFromFile()
     }
 }

@@ -6,7 +6,7 @@
         "isAdmin": true
     },
     {
-        "id": 1,
+        "id": 2,
         "login": "DanteRomeo",
         "passwordHash": -1503031638,
         "isAdmin": false
@@ -16,5 +16,11 @@
         "login": "RefractorAdmin2",
         "passwordHash": -2040930613,
         "isAdmin": true
+    },
+    {
+        "id": 5,
+        "login": "Customer",
+        "passwordHash": 107337,
+        "isAdmin": false
     }
 ]
