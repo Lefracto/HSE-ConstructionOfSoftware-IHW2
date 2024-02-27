@@ -1,4 +1,11 @@
-help text
-1
-2
-3
+Hello! You can find all features with their descriptions here:
+
+add meals   -- for adding meals in existing order(order must be not Finished)
+log out     -- for switching account
+cancel      -- for canceling order(order must be not Finished)
+check       -- for getting status of Order(InQueue, IsCooking, Finished, Canceled, Paid)
+order       -- for creating a new order
+rate        -- for rating meals from finished order
+menu        -- for getting list of meals
+help        -- for printing all commands
+pay         -- for paying order(only for finished orders)

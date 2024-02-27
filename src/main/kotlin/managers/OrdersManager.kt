@@ -1,12 +1,12 @@
 package managers
 
-import dataClasses.Meal
-import dataClasses.Order
-import dataClasses.OrderStatus
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import supportModules.DataSaver
+import stuff.Meal
+import stuff.Order
+import stuff.OrderStatus
+import supportModules.IoHelper
 
 private const val countProcessedAtSameTimeOrders = 3
 
@@ -15,10 +15,16 @@ private const val allOrdersCancellationText = "All orders have been canceled."
 private const val thanksForRateMessage = "Thank you for rating us!"
 private const val enterCommentForMealMessage = "Enter a comment for this meal: "
 private const val enteringRateForMealMessage = "Enter meals id to rate using \',\' (like this: 0, 1, 2) : "
+private const val enteringMealsIdMessage = "Enter meals id using \',\' (like this: 0, 1, 2) : "
 private const val addingMealErrorMessage = "Invalid input format. Please enter meal ids separated by commas."
 private const val rateUnpaidOrderMessage = "You can't rate unpaid order!"
 private const val enteringOrderIdMessage = "Enter order id: "
-
+private const val noOrdersMessage = "You have no orders!"
+private const val noOrdersWithSuchIdMessage = "You do not have order with such id!"
+private const val successfulAddingMealsMessage = "Meals have been added successfully!"
+private const val orderedMealsMessage = "You have ordered next meals: "
+private const val noOrdersToRateMessage = "You have no orders to rate!"
+private const val possibleOrdersToRateMessage = "You can rate next orders: "
 
 class OrdersManager(private var statsManager: StatsManager) {
     private val orders: MutableList<Pair<Order, Job?>> = mutableListOf()
@@ -63,13 +69,13 @@ class OrdersManager(private var statsManager: StatsManager) {
     private fun getValidOrderInput(userId: Int, orderId: Int): Pair<Order, Job?>? {
         val customersOrders = orders.filter { pair -> pair.first.customerId == userId }
         if (customersOrders.isEmpty()) {
-            println("You have no orders!")
+            println(noOrdersMessage)
             return null
         }
 
         val order = customersOrders.find { order -> order.first.id == orderId }
         if (order == null) {
-            println("You do not have order with such id!")
+            println(noOrdersWithSuchIdMessage)
             return null
         }
         return order
@@ -108,7 +114,7 @@ class OrdersManager(private var statsManager: StatsManager) {
         try {
             if (menu.isEmpty())
                 return
-            print(enteringRateForMealMessage)
+            print(enteringMealsIdMessage)
             val orderedMeals = Meal.readMealsIds(menu) ?: return
             orderedMeals.map { meal -> meal.countBookings++ }
             val order = Order(orderedMeals, OrderStatus.InQueue, customerId)
@@ -133,13 +139,13 @@ class OrdersManager(private var statsManager: StatsManager) {
     }
 
     fun checkOrderStatus(userId: Int) {
-        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
+        val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
         println("You order with id $orderId has next status: ${order.first.orderStatus}")
     }
 
     fun cancelOrder(userId: Int) {
-        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
+        val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
 
         val order = getValidOrderInput(userId, orderId) ?: return
 
@@ -157,17 +163,25 @@ class OrdersManager(private var statsManager: StatsManager) {
     }
 
     fun editOrder(menu: MutableList<Meal>, customerId: Int) {
-        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
+        println("You have next orders: ")
+        val possibleOrders = orders.filter { localOrder -> localOrder.first.customerId == customerId }
+        possibleOrders.forEach { localOrder -> print("${localOrder.first.id}  ") }
+
+        val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(customerId, orderId) ?: return
 
-        print("Enter meals id using \',\' (like this: 0, 1, 2) : ")
+        println(orderedMealsMessage)
+        menu.forEach { meal -> println("${meal.name} -- ${meal.id}") }
+
+        print(enteringMealsIdMessage)
         val orderedMeals = Meal.readMealsIds(menu) ?: return
+
         orderedMeals.forEach { meal -> order.first.meals.add(meal) }
-        println("Meals have been added successfully!")
+        println(successfulAddingMealsMessage)
     }
 
     fun payForTheOrder(userId: Int) {
-        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
+        val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
         order.first.orderStatus = OrderStatus.Paid
         val cost = order.first.meals.sumOf { meal -> meal.price }
@@ -176,7 +190,17 @@ class OrdersManager(private var statsManager: StatsManager) {
     }
 
     fun rateOrder(userId: Int) {
-        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
+        val ordersToRate =
+            orders.filter { order -> order.first.customerId == userId && order.first.orderStatus == OrderStatus.Paid }
+        if (ordersToRate.isEmpty()) {
+            println(noOrdersToRateMessage)
+            return
+        } else {
+            println(possibleOrdersToRateMessage)
+            ordersToRate.forEach { order -> print(order.first.id) }
+        }
+
+        val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
         if (order.first.orderStatus != OrderStatus.Paid) {
             println(rateUnpaidOrderMessage)
@@ -187,7 +211,7 @@ class OrdersManager(private var statsManager: StatsManager) {
         val dishesToRate = Meal.readMealsIds(order.first.meals) ?: return
 
         for (dish in dishesToRate) {
-            val rating = DataSaver.getIntInput("Enter rating for dish $dish (from 1 to 5): ", 6, 0, true)
+            val rating = IoHelper.getIntInput("Enter rating for dish $dish (from 1 to 5): ", 6, 0, true)
             print(enterCommentForMealMessage)
             val commentForMeal = readlnOrNull() ?: ""
             dish.rating.addRating(rating, commentForMeal)

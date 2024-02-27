@@ -1,4 +1,4 @@
-package dataClasses
+package stuff
 
 enum class OrderStatus {
     InQueue,

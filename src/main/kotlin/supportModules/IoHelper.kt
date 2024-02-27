@@ -8,7 +8,7 @@ import java.util.*
 private const val incorrectIntInputMessage = "Invalid input! Please enter a valid integer."
 private const val readingFileError = "Reading file error!"
 
-object DataSaver {
+object IoHelper {
     val json = Json { prettyPrint = true }
     inline fun <reified T> serializeListToFile(list: List<T>, fileName: String) {
         try {

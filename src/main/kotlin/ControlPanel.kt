@@ -1,10 +1,11 @@
+
 import authentication.Authorizer
-import dataClasses.Command
-import dataClasses.User
+import authentication.User
 import managers.MealsManager
 import managers.OrdersManager
 import managers.StatsManager
-import supportModules.DataSaver
+import stuff.Command
+import supportModules.IoHelper
 
 private const val exitProgramCommandText = "exit"
 private const val incorrectCommandMessage = "Incorrect command!"
@@ -28,11 +29,9 @@ class ControlPanel {
 
     private var currentUser: User? = null
 
-
     private fun printHelp(fileName: String) {
-        println(DataSaver.readFromFile(fileName))
+        println(IoHelper.readFromFile(fileName))
     }
-
     private fun createCommandsMap() {
         // customer's commands
         commandList.add(Command("help", false) { printHelp(helpFileName) })
@@ -78,23 +77,30 @@ class ControlPanel {
         commandList.add(Command("show stats", true) { statsManager.printStats() })
         commandList.add(Command("show comments", true) { mealsManager.printMealComments() })
     }
-
     private fun printEnterText() {
         println("\nEnter command: ")
     }
-
     private fun processCommand(commandText: String): Boolean {
         val usersCommands = commandList.filter { user -> user.isAdminCommand == currentUser?.isAdmin }
         val command = usersCommands.find { c -> c.command == commandText } ?: return false
         command.action.invoke()
         return true
     }
-
     private fun checkAuthorization(): Boolean {
         currentUser = currentUser ?: this.authorizer.requestUser(false)
         return currentUser != null
     }
-
+    private fun saveData() {
+        statsManager.saveToFile()
+        authorizer.saveToFile()
+        mealsManager.saveToFile()
+        ordersManager.cancelAllOrders()
+    }
+    private fun loadData() {
+        authorizer.loadFromFile()
+        mealsManager.loadFromFile()
+        statsManager.loadFromFile()
+    }
     fun start() {
         createCommandsMap()
         loadData()
@@ -114,18 +120,5 @@ class ControlPanel {
 
         println(exitingProgramMessage)
         saveData()
-    }
-
-    private fun saveData() {
-        statsManager.saveToFile()
-        authorizer.saveToFile()
-        mealsManager.saveToFile()
-        ordersManager.cancelAllOrders()
-    }
-
-    private fun loadData() {
-        authorizer.loadFromFile()
-        mealsManager.loadFromFile()
-        statsManager.loadFromFile()
     }
 }

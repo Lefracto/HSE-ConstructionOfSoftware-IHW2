@@ -1,8 +1,7 @@
 package authentication
 
-import dataClasses.User
 import managers.StatsManager
-import supportModules.DataSaver
+import supportModules.IoHelper
 import java.util.*
 
 private const val startText = "Welcome! Enter necessary command (login, register, exit) :"
@@ -87,10 +86,10 @@ class Authorizer(private val usersFileName: String, private val statsManager: St
         }
     }
     fun saveToFile() {
-        DataSaver.serializeListToFile<User>(users, usersFileName)
+        IoHelper.serializeListToFile<User>(users, usersFileName)
     }
     fun loadFromFile() {
-        users.addAll(DataSaver.deserializeListFromFile<User>(usersFileName))
+        users.addAll(IoHelper.deserializeListFromFile<User>(usersFileName))
         if (users.isNotEmpty())
             User.idGenerator.setLastId(users.maxBy { user -> user.id }.id + 1)
     }

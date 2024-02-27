@@ -1,8 +1,8 @@
 package managers
 
-import dataClasses.Meal
-import dataClasses.Rating
-import supportModules.DataSaver
+import stuff.Meal
+import stuff.Rating
+import supportModules.IoHelper
 import java.util.*
 
 private const val enterMealsIdMessage = "Enter meal's id: "
@@ -20,7 +20,7 @@ class MealsManager(private val mealsFileName: String) {
     private val scanner = Scanner(System.`in`)
 
     private fun getMealByInput(): Meal? {
-        val id = DataSaver.getIntInput(enterMealsIdMessage)
+        val id = IoHelper.getIntInput(enterMealsIdMessage)
         return meals.find { meal -> meal.id == id }
     }
 
@@ -34,8 +34,8 @@ class MealsManager(private val mealsFileName: String) {
         print(enteringMealNameMessage)
         val name = scanner.nextLine()
 
-        val price = DataSaver.getIntInput(enteringMealPriceMessage)
-        val preparationTime = DataSaver.getIntInput(enteringCookTimeMessage)
+        val price = IoHelper.getIntInput(enteringMealPriceMessage)
+        val preparationTime = IoHelper.getIntInput(enteringCookTimeMessage)
 
         val newMeal = Meal(name, price, preparationTime, 0, Rating(0.0, 0, mutableListOf()))
         meals.add(newMeal)
@@ -63,8 +63,8 @@ class MealsManager(private val mealsFileName: String) {
         print(enteringMealNameMessage)
         meal.name = scanner.nextLine()
 
-        meal.price = DataSaver.getIntInput(enteringMealPriceMessage)
-        meal.preparationTime = DataSaver.getIntInput(enteringCookTimeMessage)
+        meal.price = IoHelper.getIntInput(enteringMealPriceMessage)
+        meal.preparationTime = IoHelper.getIntInput(enteringCookTimeMessage)
 
         println(successfulMealChangeMessage)
     }
@@ -118,11 +118,11 @@ class MealsManager(private val mealsFileName: String) {
     }
 
     fun saveToFile() {
-        DataSaver.serializeListToFile<Meal>(meals, mealsFileName)
+        IoHelper.serializeListToFile<Meal>(meals, mealsFileName)
     }
 
     fun loadFromFile() {
-        meals.addAll(DataSaver.deserializeListFromFile<Meal>(mealsFileName))
+        meals.addAll(IoHelper.deserializeListFromFile<Meal>(mealsFileName))
         if (meals.isNotEmpty())
             Meal.idGenerator.setLastId(meals.maxBy { meals -> meals.id }.id + 1)
     }

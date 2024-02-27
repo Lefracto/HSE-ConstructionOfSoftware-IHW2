@@ -1,7 +1,7 @@
-package dataClasses
+package authentication
 
-import supportModules.IdGenerator
 import kotlinx.serialization.Serializable
+import supportModules.IdGenerator
 
 @Serializable
 data class User(val id: Int, val login: String, val passwordHash: Int, val isAdmin: Boolean) {

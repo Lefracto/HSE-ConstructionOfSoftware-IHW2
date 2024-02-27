@@ -4,39 +4,45 @@
         "name": "Chicken",
         "price": 10,
         "preparationTime": 5,
-        "countBookings": 3,
+        "countBookings": 5,
         "rating": {
             "comments": [
-                "It is good"
+                "It is good",
+                "It is bad("
+            ],
+            "rating": 3.0,
+            "countRates": 2
+        }
+    },
+    {
+        "id": 2,
+        "name": "Lobster",
+        "price": 100,
+        "preparationTime": 60,
+        "countBookings": 2,
+        "rating": {
+            "comments": [
+                "It is excellent!"
             ],
             "rating": 5.0,
             "countRates": 1
         }
     },
     {
-        "id": 2,
-        "name": "Test1",
-        "price": 12,
-        "preparationTime": 60,
-        "countBookings": 1,
-        "rating": {
-        }
-    },
-    {
         "id": 3,
-        "name": "Test2",
-        "price": 12,
+        "name": "Draniki",
+        "price": 80,
         "preparationTime": 120,
-        "countBookings": 1,
+        "countBookings": 2,
         "rating": {
         }
     },
     {
         "id": 4,
-        "name": "Test3",
-        "price": 12,
+        "name": "Shkwarki",
+        "price": 200,
         "preparationTime": 180,
-        "countBookings": 2,
+        "countBookings": 4,
         "rating": {
         }
     }

@@ -1,13 +1,13 @@
 [
     {
         "id": 1,
-        "login": "Ref",
+        "login": "Admin",
         "passwordHash": -2040930614,
         "isAdmin": true
     },
     {
         "id": 3,
-        "login": "Customer",
+        "login": "User",
         "passwordHash": 107337,
         "isAdmin": false
     }

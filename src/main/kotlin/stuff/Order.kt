@@ -1,4 +1,4 @@
-package dataClasses
+package stuff
 
 import kotlinx.serialization.Serializable
 import supportModules.IdGenerator
