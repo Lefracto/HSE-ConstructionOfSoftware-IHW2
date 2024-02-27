@@ -1,6 +1,7 @@
 package authentication
 
 import dataClasses.User
+import managers.StatsManager
 import supportModules.DataSaver
 import java.util.*
 
@@ -14,10 +15,10 @@ private const val askForLoginText = "Enter your login: "
 private const val askForPasswordText = "Enter your password: "
 private const val loggingText = "Logging in:"
 private const val registerCommandText = "register"
-private const val loginCommandText = "login"
+private const val loginCommandText = "log in"
 private const val exitCommandText = "exit"
 
-class Authorizer(private val usersFileName: String) {
+class Authorizer(private val usersFileName: String, private val statsManager: StatsManager) {
 
     private val users: MutableList<User> = mutableListOf()
     private val scanner = Scanner(System.`in`)
@@ -29,7 +30,7 @@ class Authorizer(private val usersFileName: String) {
             val providedPasswordHash = password.hashCode()
             if (storedPasswordHash == providedPasswordHash) {
                 println(successfulLoginText)
-                return user;
+                return user
             }
 
             println(incorrectPasswordText)
@@ -62,6 +63,8 @@ class Authorizer(private val usersFileName: String) {
         val (login, password) = requestCredentials()
         val user = User(login, password, isAdmin)
         addUser(user)
+        if (!isAdmin)
+            statsManager.countCustomers++
         return user
     }
     fun requestUser(isAdmin: Boolean): User? {

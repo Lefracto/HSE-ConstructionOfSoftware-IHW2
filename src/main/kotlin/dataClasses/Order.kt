@@ -10,7 +10,7 @@ data class Order(val id: Int, val meals: MutableList<Meal>, var orderStatus: Ord
     }
 
     constructor(meals:  MutableList<Meal>, orderStatus: OrderStatus, customerId: Int) :
-            this(User.idGenerator.generateId(), meals, orderStatus, customerId)
+            this(idGenerator.generateId(), meals, orderStatus, customerId)
 
     override fun toString(): String {
         return super.toString()

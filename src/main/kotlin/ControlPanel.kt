@@ -4,42 +4,44 @@ import dataClasses.User
 import managers.MealsManager
 import managers.OrdersManager
 import managers.StatsManager
+import supportModules.DataSaver
 
 private const val exitProgramCommandText = "exit"
 private const val incorrectCommandMessage = "Incorrect command!"
 
-private const val usersFileName = "users.json"
-private const val mealsFileName = "meals.json"
-private const val statsFileName = "stats.json"
+private const val usersFileName = "savedData\\users.json"
+private const val mealsFileName = "savedData\\meals.json"
+private const val statsFileName = "savedData\\stats.json"
 
-private const val helpFileName = "help.txt"
-private const val guideFileName = "guide.txt"
+private const val helpFileName = "savedData\\help.txt"
+private const val guideFileName = "savedData\\guide.txt"
+
+private const val exitingProgramMessage = "Exiting program..."
 
 class ControlPanel {
     private val commandList: MutableList<Command> = mutableListOf()
 
-
-    private val authorizer: Authorizer = Authorizer(usersFileName)
-    private val mealsManager: MealsManager = MealsManager(mealsFileName)
     private val statsManager: StatsManager = StatsManager(statsFileName)
+    private val authorizer: Authorizer = Authorizer(usersFileName, statsManager)
+    private val mealsManager: MealsManager = MealsManager(mealsFileName)
     private val ordersManager: OrdersManager = OrdersManager(statsManager)
 
     private var currentUser: User? = null
 
 
-    private fun printHelp() {
-        println("Some help")
+    private fun printHelp(fileName: String) {
+        println(DataSaver.readFromFile(fileName))
     }
 
     private fun createCommandsMap() {
         // customer's commands
-        commandList.add(Command("help", false) { printHelp() })
+        commandList.add(Command("help", false) { printHelp(helpFileName) })
         commandList.add(Command("log out", false) { currentUser = null })
         commandList.add(
             Command(
                 "order",
                 false
-            ) { mealsManager.showMeals(); ordersManager.addOrder(mealsManager.getMenu(), currentUser!!.id) })
+            ) { mealsManager.showMeals(false); ordersManager.addOrder(mealsManager.getMenu(), currentUser!!.id) })
         commandList.add(Command("check", false) {
             ordersManager.checkOrderStatus(
                 currentUser!!.id,
@@ -50,7 +52,6 @@ class ControlPanel {
                 currentUser!!.id,
             )
         })
-        commandList.add(Command("rate", false) { })
         commandList.add(Command("pay", false) {
             ordersManager.payForTheOrder(
                 currentUser!!.id,
@@ -62,38 +63,30 @@ class ControlPanel {
                 currentUser!!.id
             )
         })
-        commandList.add(Command("rate dish", false) { ordersManager.rateOrder(currentUser!!.id) })
+        commandList.add(Command("rate", false) { ordersManager.rateOrder(currentUser!!.id) })
+        commandList.add(Command("menu", false) { mealsManager.showMeals(false) })
 
 
         // admins commands
         commandList.add(Command("log out", true) { currentUser = null })
         commandList.add(Command("register admin", true) { authorizer.registerUser(true) })
-        commandList.add(Command("guide", true) { printHelp() })
+        commandList.add(Command("guide", true) { printHelp(guideFileName) })
         commandList.add(Command("add meal", true) { mealsManager.addMeal() })
-        commandList.add(Command("show meals", true) { mealsManager.showMeals() })
+        commandList.add(Command("menu", true) { mealsManager.showMeals(true) })
         commandList.add(Command("edit meal", true) { mealsManager.editMeal() })
         commandList.add(Command("remove meal", true) { mealsManager.removeMeal() })
-
-
-        //commandList.add(dataClasses.Command("show stats", true) { authorizer.tryAuthorize() })
-
+        commandList.add(Command("show stats", true) { statsManager.printStats() })
+        commandList.add(Command("show comments", true) { mealsManager.printMealComments() })
     }
-
 
     private fun printEnterText() {
         println("\nEnter command: ")
     }
 
-
     private fun processCommand(commandText: String): Boolean {
         val usersCommands = commandList.filter { user -> user.isAdminCommand == currentUser?.isAdmin }
         val command = usersCommands.find { c -> c.command == commandText } ?: return false
-
-        if (command.isAdminCommand == currentUser?.isAdmin)
-            command.action.invoke()
-        else
-            println("Error of access level.")
-
+        command.action.invoke()
         return true
     }
 
@@ -119,11 +112,12 @@ class ControlPanel {
 
         } while (command != exitProgramCommandText)
 
-        println("Exiting program...")
+        println(exitingProgramMessage)
         saveData()
     }
 
     private fun saveData() {
+        statsManager.saveToFile()
         authorizer.saveToFile()
         mealsManager.saveToFile()
         ordersManager.cancelAllOrders()
@@ -131,6 +125,7 @@ class ControlPanel {
 
     private fun loadData() {
         authorizer.loadFromFile()
-       // mealsManager.loadFromFile()
+        mealsManager.loadFromFile()
+        statsManager.loadFromFile()
     }
 }

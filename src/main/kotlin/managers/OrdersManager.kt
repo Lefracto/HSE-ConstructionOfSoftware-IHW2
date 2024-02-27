@@ -10,18 +10,42 @@ import supportModules.DataSaver
 
 private const val countProcessedAtSameTimeOrders = 3
 
-class OrdersManager(statsManager: StatsManager) {
+private const val cancellationUnfinishedOrderMessage = "You can't cancel finished order!"
+private const val allOrdersCancellationText = "All orders have been canceled."
+private const val thanksForRateMessage = "Thank you for rating us!"
+private const val enterCommentForMealMessage = "Enter a comment for this meal: "
+private const val enteringRateForMealMessage = "Enter meals id to rate using \',\' (like this: 0, 1, 2) : "
+private const val addingMealErrorMessage = "Invalid input format. Please enter meal ids separated by commas."
+private const val rateUnpaidOrderMessage = "You can't rate unpaid order!"
+private const val enteringOrderIdMessage = "Enter order id: "
+
+
+class OrdersManager(private var statsManager: StatsManager) {
     private val orders: MutableList<Pair<Order, Job?>> = mutableListOf()
 
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     private val ordersMutex = Mutex()
     private var jobsCount = 0
 
+    private var wasQueueAdvance: Boolean = false
+
+    // Priorities are here
     private fun extractNextOrderToCook(): Pair<Order, Job?>? {
-        val order = orders.find { pair -> pair.second == null }
-        if (order != null)
-            orders.remove(order)
-        return order
+        val ordersInQueue = orders.filter { pair -> pair.second == null }
+
+        if (ordersInQueue.isEmpty()) {
+            return null
+        }
+
+        val newOrder = if (wasQueueAdvance) {
+            ordersInQueue[0]
+        } else {
+            ordersInQueue.minBy { order -> order.first.meals.sumOf { meal -> meal.preparationTime } }
+        }
+        wasQueueAdvance = !wasQueueAdvance
+
+        orders.remove(newOrder)
+        return newOrder
     }
 
     private fun decreaseJobsCount() {
@@ -82,8 +106,11 @@ class OrdersManager(statsManager: StatsManager) {
 
     fun addOrder(menu: MutableList<Meal>, customerId: Int) {
         try {
-            print("Enter meals id using \',\' (like this: 0, 1, 2) : ")
+            if (menu.isEmpty())
+                return
+            print(enteringRateForMealMessage)
             val orderedMeals = Meal.readMealsIds(menu) ?: return
+            orderedMeals.map { meal -> meal.countBookings++ }
             val order = Order(orderedMeals, OrderStatus.InQueue, customerId)
 
             if (jobsCount < countProcessedAtSameTimeOrders) {
@@ -97,26 +124,27 @@ class OrdersManager(statsManager: StatsManager) {
             } else {
                 orders.add(Pair(order, null))
             }
+            statsManager.ordersCount++
             println("Order with id ${order.id} has been added successfully! ")
 
         } catch (e: NumberFormatException) {
-            println("Invalid input format. Please enter meal ids separated by commas.")
+            println(addingMealErrorMessage)
         }
     }
 
     fun checkOrderStatus(userId: Int) {
-        val orderId = DataSaver.getIntInput("Enter order id: ")
+        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
         println("You order with id $orderId has next status: ${order.first.orderStatus}")
     }
 
     fun cancelOrder(userId: Int) {
-        val orderId = DataSaver.getIntInput("Enter order id: ")
+        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
 
         val order = getValidOrderInput(userId, orderId) ?: return
 
         if (order.first.orderStatus == OrderStatus.Paid || order.first.orderStatus == OrderStatus.Finished) {
-            println("You can't cancel finished order!")
+            println(cancellationUnfinishedOrderMessage)
             return
         }
 
@@ -129,7 +157,7 @@ class OrdersManager(statsManager: StatsManager) {
     }
 
     fun editOrder(menu: MutableList<Meal>, customerId: Int) {
-        val orderId = DataSaver.getIntInput("Enter order id: ")
+        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(customerId, orderId) ?: return
 
         print("Enter meals id using \',\' (like this: 0, 1, 2) : ")
@@ -139,25 +167,32 @@ class OrdersManager(statsManager: StatsManager) {
     }
 
     fun payForTheOrder(userId: Int) {
-        val orderId = DataSaver.getIntInput("Enter order id: ")
+        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
         order.first.orderStatus = OrderStatus.Paid
-        println("You order with id $orderId and cost ${order.first.meals.sumOf { meal -> meal.price }} has been paid")
+        val cost = order.first.meals.sumOf { meal -> meal.price }
+        statsManager.revenue += cost
+        println("You order with id $orderId and cost $cost has been paid")
     }
 
     fun rateOrder(userId: Int) {
-        val orderId = DataSaver.getIntInput("Enter order id: ")
+        val orderId = DataSaver.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
         if (order.first.orderStatus != OrderStatus.Paid) {
-            println("You can't rate unpaid order!")
+            println(rateUnpaidOrderMessage)
             return
         }
-        var dishesToRate = Meal.readMealsIds(order.first.meals) ?: return
+
+        print(enteringRateForMealMessage)
+        val dishesToRate = Meal.readMealsIds(order.first.meals) ?: return
 
         for (dish in dishesToRate) {
             val rating = DataSaver.getIntInput("Enter rating for dish $dish (from 1 to 5): ", 6, 0, true)
-            // attach rating to meal
+            print(enterCommentForMealMessage)
+            val commentForMeal = readlnOrNull() ?: ""
+            dish.rating.addRating(rating, commentForMeal)
         }
+        println(thanksForRateMessage)
     }
 
     fun cancelAllOrders() {
@@ -166,6 +201,6 @@ class OrdersManager(statsManager: StatsManager) {
                 order.second!!.cancel("")
             }
         }
-        println("All orders have been canceled.")
+        println(allOrdersCancellationText)
     }
 }

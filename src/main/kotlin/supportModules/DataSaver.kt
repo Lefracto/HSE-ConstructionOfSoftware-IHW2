@@ -5,6 +5,9 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.util.*
 
+private const val incorrectIntInputMessage = "Invalid input! Please enter a valid integer."
+private const val readingFileError = "Reading file error!"
+
 object DataSaver {
     val json = Json { prettyPrint = true }
     inline fun <reified T> serializeListToFile(list: List<T>, fileName: String) {
@@ -38,9 +41,19 @@ object DataSaver {
 
                 return newInt
             } catch (e: InputMismatchException) {
-                println("Invalid input! Please enter a valid integer.")
+                println(incorrectIntInputMessage)
                 scanner.nextLine()
             }
         }
+    }
+
+    fun readFromFile(fileName: String) : String {
+        try {
+            val file = File(fileName)
+            return file.readText()
+        } catch (e: Exception) {
+            println(readingFileError)
+        }
+        return ""
     }
 }

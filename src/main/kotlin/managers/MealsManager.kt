@@ -2,16 +2,25 @@ package managers
 
 import dataClasses.Meal
 import dataClasses.Rating
-import dataClasses.User
 import supportModules.DataSaver
 import java.util.*
+
+private const val enterMealsIdMessage = "Enter meal's id: "
+private const val noMealsInMenuMessage = "There are no meals in the menu."
+private const val addingNewMealMessage = "Adding a new meal."
+private const val successfulAddingMealMessage = "Meal added successfully!"
+private const val askForMealIdForCommentsMessage = "Print meal id to see a comments of visitors: "
+private const val enteringMealNameMessage = "Enter meal name: "
+private const val enteringMealPriceMessage = "Enter meal price: "
+private const val enteringCookTimeMessage = "Enter preparation time (in seconds): "
+private const val successfulMealChangeMessage = "Meal has been changed successfully."
 
 class MealsManager(private val mealsFileName: String) {
     private val meals: MutableList<Meal> = mutableListOf()
     private val scanner = Scanner(System.`in`)
 
     private fun getMealByInput(): Meal? {
-        val id = DataSaver.getIntInput("Enter meal's id: ")
+        val id = DataSaver.getIntInput(enterMealsIdMessage)
         return meals.find { meal -> meal.id == id }
     }
 
@@ -21,21 +30,21 @@ class MealsManager(private val mealsFileName: String) {
 
     fun addMeal() {
         val scanner = Scanner(System.`in`)
-        println("Adding a new meal.")
-        print("Enter meal name: ")
+        println(addingNewMealMessage)
+        print(enteringMealNameMessage)
         val name = scanner.nextLine()
 
-        val price = DataSaver.getIntInput("Enter meal price: ")
-        val preparationTime = DataSaver.getIntInput("Enter preparation time (in minutes): ")
+        val price = DataSaver.getIntInput(enteringMealPriceMessage)
+        val preparationTime = DataSaver.getIntInput(enteringCookTimeMessage)
 
-        val newMeal = Meal(name, price, preparationTime, 0, Rating(4.0, 10))
+        val newMeal = Meal(name, price, preparationTime, 0, Rating(0.0, 0, mutableListOf()))
         meals.add(newMeal)
-        println("Meal added successfully!")
+        println(successfulAddingMealMessage)
     }
 
     fun removeMeal() {
         if (meals.isEmpty()) {
-            println("There are no meals in menu.")
+            println(noMealsInMenuMessage)
             return
         }
 
@@ -45,37 +54,66 @@ class MealsManager(private val mealsFileName: String) {
 
     fun editMeal() {
         if (meals.isEmpty()) {
-            println("There are no meals in menu.")
+            println(noMealsInMenuMessage)
             return
         }
 
         val meal = getMealByInput() ?: return
 
-        print("Enter new meal name: ")
+        print(enteringMealNameMessage)
         meal.name = scanner.nextLine()
 
-        meal.price = DataSaver.getIntInput("Enter new meal price: ")
-        meal.preparationTime = DataSaver.getIntInput("Enter new preparation time (in minutes): ")
+        meal.price = DataSaver.getIntInput(enteringMealPriceMessage)
+        meal.preparationTime = DataSaver.getIntInput(enteringCookTimeMessage)
 
-        println("Meal has been changed successfully.")
+        println(successfulMealChangeMessage)
     }
 
-    fun showMeals() {
-        if (meals.isNotEmpty()) {
-            println("%-10s %-20s %-10s %-20s %-10s".format("id", "name", "price", "timeToCook(min)", "countBookings"))
-            for (meal in meals) {
-                println(
-                    "%-10s %-20s %-10s %-20s %-10s".format(
-                        meal.id,
-                        meal.name,
-                        meal.price,
-                        meal.preparationTime,
-                        meal.countBookings
-                    )
+    fun showMeals(isAdmin: Boolean) {
+        if (meals.isEmpty()) {
+            println(noMealsInMenuMessage)
+            return
+        }
+
+        val headerFormat = if (isAdmin) "%-10s %-20s %-10s %-20s %-10s %-15s" else "%-10s %-20s %-10s %-20s"
+        println(headerFormat.format("id", "name", "price", "timeToCook(sec)", "bookings", "rating"))
+
+        for (meal in meals) {
+            val mealInfo = if (isAdmin) {
+                "%-10s %-20s %-10s %-20s %-10s %-15s".format(
+                    meal.id,
+                    meal.name,
+                    meal.price,
+                    meal.preparationTime,
+                    meal.countBookings,
+                    meal.rating.value,
+                )
+            } else {
+                "%-10s %-20s %-10s %-20s".format(
+                    meal.id,
+                    meal.name,
+                    meal.price,
+                    meal.preparationTime,
                 )
             }
-        } else {
-            println("There are no meals in the menu.")
+            println(mealInfo)
+        }
+
+    }
+
+    fun printMealComments() {
+        if (meals.isEmpty()) {
+            println(noMealsInMenuMessage)
+            return
+        }
+
+        print(askForMealIdForCommentsMessage)
+        val meal = getMealByInput() ?: return
+
+        for (text in meal.rating.comments) {
+            println("-------- Comment --------")
+            println(text)
+            println("-----  End Comment -----")
         }
     }
 
@@ -86,6 +124,6 @@ class MealsManager(private val mealsFileName: String) {
     fun loadFromFile() {
         meals.addAll(DataSaver.deserializeListFromFile<Meal>(mealsFileName))
         if (meals.isNotEmpty())
-            User.idGenerator.setLastId(meals.maxBy { meals -> meals.id }.id + 1)
+            Meal.idGenerator.setLastId(meals.maxBy { meals -> meals.id }.id + 1)
     }
 }

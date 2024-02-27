@@ -1,0 +1,43 @@
+[
+    {
+        "id": 1,
+        "name": "Chicken",
+        "price": 10,
+        "preparationTime": 5,
+        "countBookings": 3,
+        "rating": {
+            "comments": [
+                "It is good"
+            ],
+            "rating": 5.0,
+            "countRates": 1
+        }
+    },
+    {
+        "id": 2,
+        "name": "Test1",
+        "price": 12,
+        "preparationTime": 60,
+        "countBookings": 1,
+        "rating": {
+        }
+    },
+    {
+        "id": 3,
+        "name": "Test2",
+        "price": 12,
+        "preparationTime": 120,
+        "countBookings": 1,
+        "rating": {
+        }
+    },
+    {
+        "id": 4,
+        "name": "Test3",
+        "price": 12,
+        "preparationTime": 180,
+        "countBookings": 2,
+        "rating": {
+        }
+    }
+]
