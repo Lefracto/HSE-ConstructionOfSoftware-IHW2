@@ -107,7 +107,7 @@ class MealsManager(private val mealsFileName: String) {
             return
         }
 
-        print(askForMealIdForCommentsMessage)
+       // print(askForMealIdForCommentsMessage)
         val meal = getMealByInput() ?: return
 
         for (text in meal.rating.comments) {

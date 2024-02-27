@@ -163,15 +163,18 @@ class OrdersManager(private var statsManager: StatsManager) {
     }
 
     fun editOrder(menu: MutableList<Meal>, customerId: Int) {
-        println("You have next orders: ")
+        print("You have next orders: ")
         val possibleOrders = orders.filter { localOrder -> localOrder.first.customerId == customerId }
         possibleOrders.forEach { localOrder -> print("${localOrder.first.id}  ") }
+        println()
 
         val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(customerId, orderId) ?: return
 
-        println(orderedMealsMessage)
-        menu.forEach { meal -> println("${meal.name} -- ${meal.id}") }
+        if (order.first.orderStatus != OrderStatus.IsCooking && order.first.orderStatus != OrderStatus.InQueue) {
+            println("You can add meals only for orders with status IsCooking or InQueue")
+            return
+        }
 
         print(enteringMealsIdMessage)
         val orderedMeals = Meal.readMealsIds(menu) ?: return
@@ -183,6 +186,11 @@ class OrdersManager(private var statsManager: StatsManager) {
     fun payForTheOrder(userId: Int) {
         val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
+
+        if (order.first.orderStatus != OrderStatus.Finished) {
+            println("You can pay for only finished orders!")
+        }
+
         order.first.orderStatus = OrderStatus.Paid
         val cost = order.first.meals.sumOf { meal -> meal.price }
         statsManager.revenue += cost
@@ -196,8 +204,9 @@ class OrdersManager(private var statsManager: StatsManager) {
             println(noOrdersToRateMessage)
             return
         } else {
-            println(possibleOrdersToRateMessage)
-            ordersToRate.forEach { order -> print(order.first.id) }
+            print(possibleOrdersToRateMessage)
+            ordersToRate.forEach { order -> print("${order.first.id} ") }
+            println()
         }
 
         val orderId = IoHelper.getIntInput(enteringOrderIdMessage)

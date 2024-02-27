@@ -4,7 +4,7 @@ import managers.StatsManager
 import supportModules.IoHelper
 import java.util.*
 
-private const val startText = "Welcome! Enter necessary command (login, register, exit) :"
+private const val startText = "Welcome! Enter necessary command (log in, register, exit) :"
 private const val newUserText = "Registering a new user:"
 private const val invalidChoiceText = "Invalid choice."
 private const val successfulLoginText = "OK"

@@ -57,6 +57,7 @@ class ControlPanel {
             )
         })
         commandList.add(Command("add meals", false) {
+            mealsManager.showMeals(false)
             ordersManager.editOrder(
                 mealsManager.getMenu(),
                 currentUser!!.id
