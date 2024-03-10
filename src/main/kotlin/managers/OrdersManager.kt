@@ -22,7 +22,6 @@ private const val enteringOrderIdMessage = "Enter order id: "
 private const val noOrdersMessage = "You have no orders!"
 private const val noOrdersWithSuchIdMessage = "You do not have order with such id!"
 private const val successfulAddingMealsMessage = "Meals have been added successfully!"
-private const val orderedMealsMessage = "You have ordered next meals: "
 private const val noOrdersToRateMessage = "You have no orders to rate!"
 private const val possibleOrdersToRateMessage = "You can rate next orders: "
 
@@ -58,7 +57,7 @@ class OrdersManager(private var statsManager: StatsManager) {
         jobsCount--
         val nextOrder: Pair<Order, Job?> = extractNextOrderToCook() ?: return
 
-        nextOrder.first.orderStatus = OrderStatus.IsCooking
+        nextOrder.first.orderStatus = OrderStatus.COOKING
         val job = coroutineScope.launch {
             cookOrder(nextOrder.first)
         }
@@ -101,12 +100,12 @@ class OrdersManager(private var statsManager: StatsManager) {
         }
         ordersMutex.withLock {
             val orderToUpdate = orders.find { it.first.id == cookingOrder.id }
-            orderToUpdate?.first?.orderStatus = OrderStatus.Finished
+            orderToUpdate?.first?.orderStatus = OrderStatus.FINISHED
         }
         decreaseJobsCount()
     } catch (e: CancellationException) {
         ordersMutex.withLock {
-            orders.find { order -> order.first.id == cookingOrder.id }!!.first.orderStatus = OrderStatus.Canceled
+            orders.find { order -> order.first.id == cookingOrder.id }!!.first.orderStatus = OrderStatus.CANCELED
         }
     }
 
@@ -117,10 +116,10 @@ class OrdersManager(private var statsManager: StatsManager) {
             print(enteringMealsIdMessage)
             val orderedMeals = Meal.readMealsIds(menu) ?: return
             orderedMeals.map { meal -> meal.countBookings++ }
-            val order = Order(orderedMeals, OrderStatus.InQueue, customerId)
+            val order = Order(orderedMeals, OrderStatus.WAITING, customerId)
 
             if (jobsCount < countProcessedAtSameTimeOrders) {
-                order.orderStatus = OrderStatus.IsCooking
+                order.orderStatus = OrderStatus.COOKING
                 val job = coroutineScope.launch {
                     cookOrder(order)
                 }
@@ -149,7 +148,7 @@ class OrdersManager(private var statsManager: StatsManager) {
 
         val order = getValidOrderInput(userId, orderId) ?: return
 
-        if (order.first.orderStatus == OrderStatus.Paid || order.first.orderStatus == OrderStatus.Finished) {
+        if (order.first.orderStatus == OrderStatus.PAID || order.first.orderStatus == OrderStatus.FINISHED) {
             println(cancellationUnfinishedOrderMessage)
             return
         }
@@ -157,7 +156,7 @@ class OrdersManager(private var statsManager: StatsManager) {
         if (order.second != null)
             order.second!!.cancel()
         else
-            order.first.orderStatus = OrderStatus.Canceled
+            order.first.orderStatus = OrderStatus.CANCELED
 
         println("Order with id ${order.first.id} has been canceled.")
     }
@@ -171,7 +170,7 @@ class OrdersManager(private var statsManager: StatsManager) {
         val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(customerId, orderId) ?: return
 
-        if (order.first.orderStatus != OrderStatus.IsCooking && order.first.orderStatus != OrderStatus.InQueue) {
+        if (order.first.orderStatus != OrderStatus.COOKING && order.first.orderStatus != OrderStatus.WAITING) {
             println("You can add meals only for orders with status IsCooking or InQueue")
             return
         }
@@ -187,11 +186,11 @@ class OrdersManager(private var statsManager: StatsManager) {
         val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
 
-        if (order.first.orderStatus != OrderStatus.Finished) {
+        if (order.first.orderStatus != OrderStatus.FINISHED) {
             println("You can pay for only finished orders!")
         }
 
-        order.first.orderStatus = OrderStatus.Paid
+        order.first.orderStatus = OrderStatus.PAID
         val cost = order.first.meals.sumOf { meal -> meal.price }
         statsManager.revenue += cost
         println("You order with id $orderId and cost $cost has been paid")
@@ -199,7 +198,7 @@ class OrdersManager(private var statsManager: StatsManager) {
 
     fun rateOrder(userId: Int) {
         val ordersToRate =
-            orders.filter { order -> order.first.customerId == userId && order.first.orderStatus == OrderStatus.Paid }
+            orders.filter { order -> order.first.customerId == userId && order.first.orderStatus == OrderStatus.PAID }
         if (ordersToRate.isEmpty()) {
             println(noOrdersToRateMessage)
             return
@@ -211,7 +210,7 @@ class OrdersManager(private var statsManager: StatsManager) {
 
         val orderId = IoHelper.getIntInput(enteringOrderIdMessage)
         val order = getValidOrderInput(userId, orderId) ?: return
-        if (order.first.orderStatus != OrderStatus.Paid) {
+        if (order.first.orderStatus != OrderStatus.PAID) {
             println(rateUnpaidOrderMessage)
             return
         }
@@ -230,7 +229,7 @@ class OrdersManager(private var statsManager: StatsManager) {
 
     fun cancelAllOrders() {
         for (order in orders) {
-            if (order.first.orderStatus != OrderStatus.Canceled && order.second != null) {
+            if (order.first.orderStatus != OrderStatus.CANCELED && order.second != null) {
                 order.second!!.cancel("")
             }
         }
