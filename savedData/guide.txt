@@ -1,0 +1,11 @@
+You can find descriptions of all admins commands here:
+
+register admin  -- for creating new admins accounts
+show comments   -- for getting customer comments of entered meal
+remove meal     -- for removing meal from menu
+show stats      -- for printing stats
+edit meal       -- for editing entered meal data
+add meal        -- for adding new meal in menu
+log out         -- for switching account in program
+guide           -- for calling
+menu            -- for printing all menu data
